@@ -29,11 +29,14 @@ public:
 
   int getNumVertices();
   int getNumEdges();
+
+  int getDegree(int i);
   
 //private:
   arma::mat mAdjMatrix;
   int mN;
   int mE;
+  int* mDeg;
   double* mSpectrum;
   arma::mat mEigenvectors;
   
@@ -43,6 +46,8 @@ public:
 
 void randomGraphGNP(Graph* g, double p, int n);
 void randomGraphGW(Graph* g, double* p, int n);
+
+void createKiteGraph(Graph* g, int pathSize, int cliqueSize);
 
 bool isConnected(Graph* g);
 

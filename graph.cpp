@@ -19,6 +19,7 @@ Graph::Graph(int n)
   mAdjMatrix.fill(0);
   mSpectrum = 0;
   mSpectOutdated = true;
+  mDeg = 0;
 }
 
 Graph::Graph(mat* adjacency)
@@ -28,13 +29,19 @@ Graph::Graph(mat* adjacency)
   mSpectrum = 0;
   mSpectOutdated = true;
 
+  mDeg = new int[mN];
+  
   mE = 0;
   for(int i=0; i<mN; i++)
   {
+    mDeg[i] = 0;
     for(int j=i; j<mN; j++)
     {
       if(mAdjMatrix(i,j) > 0.5)
+      {
+        mDeg[i]++;
         mE++;
+      }
     }
   }
 }
@@ -43,6 +50,8 @@ Graph::~Graph()
 {
   if(mSpectrum)
     delete[] mSpectrum;
+  if(mDeg)
+    delete[] mDeg;
 }
 
 void Graph::setNumVertices(int n)
@@ -52,6 +61,11 @@ void Graph::setNumVertices(int n)
   mAdjMatrix.resize(n,n);
   mAdjMatrix.fill(0);
   mSpectOutdated = true;
+  if(mDeg)
+    delete[] mDeg;
+  mDeg = new int[n];
+  for(int i=0; i<n; i++)
+    mDeg[i] = 0;
 }
 
 bool Graph::isConnected(int i, int j)
@@ -69,6 +83,8 @@ void Graph::addEdge(int i, int j)
   {
     mAdjMatrix(i,j) = mAdjMatrix(j,i) = 1.;
     mE++;
+    mDeg[i]++;
+    mDeg[j]++;
     mSpectOutdated = true;
   }
 }
@@ -99,6 +115,11 @@ int Graph::getNumVertices()
 int Graph::getNumEdges()
 {
   return mE;
+}
+
+int Graph::getDegree(int i)
+{
+  return mDeg[i];
 }
 
 void Graph::mGenerateSpectrum()
@@ -136,6 +157,21 @@ void randomGraphGW(Graph* g, double* p, int n)
       if(drand48() < p[i]*p[j])
         g->addEdge(i,j);
     }
+}
+
+void createKiteGraph(Graph* g, int r, int s)
+{
+  int n = r+s-1;
+  g->setNumVertices(r+s-1);
+
+  int cliqueStart = r;
+  for(int i=cliqueStart; i<n; i++)
+    for(int j=i+1; j<n; j++)
+      g->addEdge(i,j);
+
+  for(int i=0; i<cliqueStart; i++)
+    g->addEdge(i,i+1);
+    
 }
 
 bool isConnected(Graph* g)
