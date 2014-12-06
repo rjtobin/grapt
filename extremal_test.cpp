@@ -12,145 +12,34 @@
 #include "graph.hpp"
 
 using namespace std;
-using namespace arma;
 
 #define EPS 0.0000001
 
-bool test_graph(Graph* g, double* error)
+double statistic(Graph* g)
 {
-  int n = g->getNumVertices();
-  
-  mat A3 = g->mAdjMatrix;
-  mat A5 = g->mAdjMatrix;
-
-  A3 = (A3*A3)*A3;
-
-  A5 = (A3*A5)*A5;
-
-  double w3 = 0., w5 = 0.;
-
-  for(int i=0; i<n; i++)
-    for(int j=0; j<n; j++)
-    {
-      w3 += A3(i,j);
-      w5 += A5(i,j);
-    }
-
-  w3 /= (double) n;
-  w5 /= (double) n;
-
-  *error = pow(w5,1./5.) - pow(w3,1./3.);
-  if(*error < -EPS)
-    return false;
-  return true;
-}
-
-bool ___test_graph(Graph* g, double* error)
-{
-  double total = 0;
-  int n = g->getNumVertices();
-
-  //if(g->spectrum(n-1) - g->spectrum(n-2) < EPS)
-  //{
-  //  *error = (double) n;
-  //  return true;
-  //}
-
-  for(int i=n-1; i>=0; i--)
-  {
-    if(g->spectrum(i) > -EPS)
-      total += pow(g->spectrum(i),2.);
-  }
-
-  if(total >= (double) (n-1) - EPS)
-  {
-    *error = total - (double) (n-1);
-    return true;
-  }
-
-  if(!isConnected(g))
-  {
-    *error = ((double) n*n - (double) g->getNumEdges()) / ((double) (n*n) * 10.);
-    return true;
-  }
-
-  *error = total - (double) (n-1);
-  
-  return false;
-}
-
-bool __test_graph(Graph* g, double* error)
-{
-  double E = 0;
   int n = g->getNumVertices();
   int m = g->getNumEdges();
-
-  //if(g->spectrum(n-1) - g->spectrum(n-2) < EPS)
-  //{
-  //  *error = (double) n;
-  //  return true;
-  //}
-
-  for(int i=n-1; i>=0; i--)
-  {
-    E += fabs(g->spectrum(i));
-  }
-
-  double rhs = 2. * (double) m / sqrt(g->spectrum(n-1));
-
-  if(rhs - E > - EPS)
-  {
-    *error = rhs - E;
-    return true;
-  }
-
-  if(!isConnected(g))
-  {
-    *error = ((double) n*n - (double) m) / ((double) (n*n) * 10.);
-    return true;
-  }
-
-  *error = rhs - E;
+  double rho = g->spectrum(n-1);
   
-  return false;
+  return rho - 2. * m / n;
 }
 
-bool el1_test_graph(Graph* g, double* error)
+void createPineapple(Graph* g, int n, int q)
 {
-  double E = 0;
+  g->setNumVertices(n);
+  for(int i=0; i<q; i++)
+    for(int j=i+1; j<q; j++)
+      g->addEdge(i,j);
+  for(int i=q; i<n; i++)
+    g->addEdge(q-1,i);
+}
+
+bool test_graph(Graph* g, double* error, double bound)
+{
   int n = g->getNumVertices();
   int m = g->getNumEdges();
-
-  //if(g->spectrum(n-1) - g->spectrum(n-2) < EPS)
-  //{
-  //  *error = (double) n;
-  //  return true;
-  //}
-
-  for(int i=n-1; i>=0; i--)
-  {
-    E += fabs(g->spectrum(i));
-  }
-
-  double avg_second = 0.;
-  for(int i=0; i<n; i++)
-  {
-    for(int j=i+1; j<n; j++)
-    {
-      if(g->isConnected(i,j))
-      {
-        avg_second += sqrt((double) (g->getDegree(i) * g->getDegree(j)));
-      }
-    }
-  }
   
-  double rhs = 2. * (double) (m*m) / avg_second;
-
-  if(E - rhs > - EPS)
-  {
-    *error = E - rhs;
-    return true;
-  }
+  double stat = statistic(g);
 
   if(!isConnected(g))
   {
@@ -158,25 +47,34 @@ bool el1_test_graph(Graph* g, double* error)
     return true;
   }
 
-  *error = E - rhs;
+  
+  if(bound - stat > - EPS)
+  {
+    *error = bound - stat;
+    return true;
+  }
+
+  *error = bound - stat;
   
   return false;
 }
 
 bool randomGNPTest()
 {
-  Graph g(1);
+  Graph g(1), rG(1);
   double error;
   for(int n=10; n<100; n+=5)
   {
+    createPineapple(&rG,n,(int)(n/2) + 1);
+    double bound = statistic(&rG);
     for(double p = 0.01; p<=1.; p+=0.1)
     {
-      cout << "." << flush;
+      cout << ".";
       for(int trial=0; trial<100; trial++)
       {
         //cout << trial << endl;
         randomGraphGNP(&g,p,n);
-        if(!test_graph(&g,&error))
+        if(!test_graph(&g,&error,bound))
         {
           cout << "\nCounterexample: " << n << ' ' << p << endl;
           for(int i=0; i<n; i++)
@@ -204,13 +102,16 @@ static double norm(double* p, int n, double exp)
 
 bool randomGWTest()
 {
-  Graph g(1);
+  Graph g(1), rG(1);
   double error;
-  for(int n=30; n<100; n+=5)
+  for(int n=15; n<100; n+=5)
   {
     cout << "trying n=" << n << endl;
     double p[n], p2[n];
 
+    createPineapple(&rG, n, (int)(n/2) + 1);
+    double bound = statistic(&rG);
+     
     for(int i=0; i<n; i++)
       p[i] = drand48()*0.8 + 0.2;
     double norm_p = norm(p,n,2.);
@@ -222,7 +123,7 @@ bool randomGWTest()
     int pm = 1;
     double inc = 0.1;
 
-    for(int trials = 0; trials < 10000; trials++)
+    for(int trials = 0; trials < 1000; trials++)
     {
       min_dir = -1;
       for(int plus_minus = -1; plus_minus <= 2; plus_minus += 2)
@@ -241,7 +142,7 @@ bool randomGWTest()
           for(int t=0; t<200; t++)
           {
             randomGraphGW(&g,p2,n);
-            if(!test_graph(&g,&error))
+            if(!test_graph(&g,&error,bound))
             {
              cerr << "Counterexample!" << endl;
              cerr << g.mAdjMatrix << endl;
@@ -282,13 +183,17 @@ bool randomGWTest()
 
 bool kiteTest()
 {
-  Graph g(1);
-  double error;
+  Graph g(1), rG(1);
+  double error, comparison;
   for(int r=2; r<100; r++)
     for(int s=1; s<30; s++)
     {
+      if(r+s-1 < 10)
+        continue;
       createKiteGraph(&g, r, s);
-      if(!test_graph(&g, &error))
+      createPineapple(&rG, r+s-1, ((int) ((r+s-1)/2)) + 1);
+      comparison = statistic(&rG);
+      if(!test_graph(&g, &error, comparison))
       {
         cout << "Counterexample!" << endl << endl;
         cout << g.mAdjMatrix << endl << endl;
@@ -302,6 +207,12 @@ int main()
 {
   srand48(10);
 
+  Graph pine(1), kite(1);
+  createPineapple(&pine,10,6);
+  createKiteGraph(&kite,3,8);
+
+  cout << statistic(&pine) << ' ' << statistic(&kite) << endl;
+  
   cout << "Testing against kite graphs..." << endl << endl;
 
   if(!kiteTest())
