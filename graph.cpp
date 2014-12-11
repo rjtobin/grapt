@@ -11,6 +11,11 @@
 using namespace arma;
 using namespace std;
 
+static inline int min(int x, int y)
+{
+  return (x<y) ? x : y;
+}
+
 Graph::Graph(int n)
 {
   mN = n;
@@ -19,6 +24,7 @@ Graph::Graph(int n)
   mAdjMatrix.fill(0);
   mSpectrum = 0;
   mSpectOutdated = true;
+  mDiamOutdated = true;
   mDeg = 0;
 }
 
@@ -28,6 +34,7 @@ Graph::Graph(mat* adjacency)
   mN = mAdjMatrix.n_cols;
   mSpectrum = 0;
   mSpectOutdated = true;
+  mDiamOutdated = true;
 
   mDeg = new int[mN];
   
@@ -61,6 +68,7 @@ void Graph::setNumVertices(int n)
   mAdjMatrix.resize(n,n);
   mAdjMatrix.fill(0);
   mSpectOutdated = true;
+  mDiamOutdated = true;
   if(mDeg)
     delete[] mDeg;
   mDeg = new int[n];
@@ -86,6 +94,7 @@ void Graph::addEdge(int i, int j)
     mDeg[i]++;
     mDeg[j]++;
     mSpectOutdated = true;
+    mDiamOutdated = true;
   }
 }
 
@@ -120,6 +129,40 @@ int Graph::getNumEdges()
 int Graph::getDegree(int i)
 {
   return mDeg[i];
+}
+
+int Graph::getDiam()
+{
+  if(!mDiamOutdated)
+    return mDiam;
+
+  mat D, Dn;
+  //D.set_size(mN,mN);
+  D = mAdjMatrix;
+  for(int i=0; i<mN; i++)
+    for(int j=0; j<mN; j++)
+      if(i != j && D(i,j) < 0.5)
+        D(i,j) = mN*mN*mN; // infinity XXX: improve this 
+
+  Dn = D;
+  for(int k=0; k<mN; k++)
+  {
+    for(int i=0; i<mN; i++)
+    {
+      for(int j=0; j<mN; j++)
+      {
+        Dn(i,j) = min(D(i,j), D(i,k) + D(k,j));
+      }
+    }
+    D = Dn;
+  }
+  mDiam = 0;
+  for(int i=0; i<mN; i++)
+    for(int j=0; j<mN; j++)
+      if(D(i,j) > mDiam)
+        mDiam = D(i,j);
+  mDiamOutdated = false;
+  return mDiam;
 }
 
 void Graph::mGenerateSpectrum()

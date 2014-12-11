@@ -31,6 +31,8 @@ public:
   int getNumEdges();
 
   int getDegree(int i);
+
+  int getDiam();
   
 //private:
   arma::mat mAdjMatrix;
@@ -38,9 +40,12 @@ public:
   int mE;
   int* mDeg;
   double* mSpectrum;
+  int mDiam;
   arma::mat mEigenvectors;
   
   bool mSpectOutdated;
+  bool mDiamOutdated;
+  
   void mGenerateSpectrum();
 };
 
