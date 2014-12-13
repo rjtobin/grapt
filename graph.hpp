@@ -51,6 +51,9 @@ public:
 
 void randomGraphGNP(Graph* g, double p, int n);
 void randomGraphGW(Graph* g, double* p, int n);
+void randomGraphDiam(Graph* g, int diam, double p, int n);
+
+void joinGraphs(Graph* r, Graph* g1, Graph* g2);
 
 void createKiteGraph(Graph* g, int pathSize, int cliqueSize);
 

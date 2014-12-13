@@ -138,6 +138,9 @@ int Graph::getDiam()
 
   mat D, Dn;
   //D.set_size(mN,mN);
+
+  std::cerr << mN << ' ' << endl;
+ 
   D = mAdjMatrix;
   for(int i=0; i<mN; i++)
     for(int j=0; j<mN; j++)
@@ -200,6 +203,72 @@ void randomGraphGW(Graph* g, double* p, int n)
       if(drand48() < p[i]*p[j])
         g->addEdge(i,j);
     }
+}
+
+void randomGraphDiam(Graph* g, int diam, double p, int n)
+{
+  g->setNumVertices(n);
+  
+  int vert[diam];
+  for(int i=0; i<diam; i++)
+    vert[i] = 1;
+
+  int left = n-diam;
+  while(left--)
+  {
+    int index = drand48() * diam;
+    vert[index]++;
+  }
+
+  g->setNumVertices(n);
+
+  int current_vertex = 0;
+  
+  for(int i=0; i<diam; i++)
+  {
+    for(int j=0; j<vert[i]; j++)
+      for(int k=j+1; k<vert[i]; k++)
+        if(drand48() < p)
+          g->addEdge(current_vertex+j, current_vertex+k);
+
+    if(i<diam-1)
+    {
+      int v1 = vert[i], v2 = vert[i+1];
+      
+      for(int j=0; j<v1; j++)
+        for(int k=0; k<v2; k++)
+          if(drand48() < p)
+            g->addEdge(current_vertex + j, current_vertex + v1 + k);
+    }
+    
+    current_vertex += vert[i];
+  }  
+}
+
+void joinGraphs(Graph* r, Graph* g1, Graph* g2)
+{
+  int n = g1->getNumVertices();
+  int m = g2->getNumVertices();
+
+  r->setNumVertices(n+m);
+
+  for(int i=0; i<n; i++)
+  {
+    for(int j=i+1; j<n; j++)
+    {
+      if(g1->isConnected(i,j))
+        r->addEdge(i,j);
+    }
+  }
+
+  for(int i=0; i<m; i++)
+  {
+    for(int j=0; j<m; j++)
+    {
+      if(g2->isConnected(i,j))
+        r->addEdge(n+i,n+j);
+    }
+  }
 }
 
 void createKiteGraph(Graph* g, int r, int s)

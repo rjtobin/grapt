@@ -115,6 +115,7 @@ bool __test_graph(Graph* g, double* error)
   return false;
 }
 
+// elphick 1
 bool el1_test_graph(Graph* g, double* error)
 {
   double E = 0;
@@ -280,6 +281,88 @@ bool randomGWTest()
   return true;
 }
 
+bool randomGWJoinTest()
+{
+  Graph g(1), g1(1), g2(1);
+  double error;
+  for(int n=30; n<100; n+=10)
+  {
+    cout << "trying n=" << n << endl;
+    double p[n], p2[n];
+
+    for(int i=0; i<n; i++)
+      p[i] = drand48()*0.8 + 0.2;
+    double norm_p = norm(p,n,2.);
+    //for(int i=0; i<n; i++)
+    //  p[i] /= norm_p;
+
+    double min_v;
+    int min_dir;
+    int pm = 1;
+    double inc = 0.1;
+
+    for(int trials = 0; trials < 10000; trials++)
+    {
+      min_dir = -1;
+      for(int plus_minus = -1; plus_minus <= 2; plus_minus += 2)
+      {
+        for(int i=0; i<n; i++)
+        {
+          for(int j=0; j<n; j++)
+            p2[j] = p[j];
+          p2[i] += inc * plus_minus;
+          if(p2[i] <= 0 || p2[i] >= 1.)
+            continue;
+          //norm_p = norm(p2,n,2.);
+          //for(int j=0; j<n; j++)
+          //  p2[j] /= norm_p;
+          double avg_error = 0;
+          for(int t=0; t<200; t++)
+          {
+            randomGraphGW(&g1,p2,n/2);
+            randomGraphGW(&g2,p2+(n/2),n/2);
+
+            joinGraphs(&g,&g1,&g2);
+            
+            if(!test_graph(&g,&error))
+            {
+             cerr << "Counterexample!" << endl;
+             cerr << g.mAdjMatrix << endl;
+             cerr << error << endl;
+             return false;
+            }
+            avg_error += error;
+          }
+          error = avg_error / 200.;
+          cout << i << ' ' << plus_minus << ' ' << error << endl;
+          if(min_dir == -1 || error < min_v)
+          {
+            min_v = error;
+            min_dir = i;
+            pm = plus_minus;
+          }
+        }
+      }
+      p[min_dir] += inc * pm;
+      if(min_v < 1.1)
+        inc = 0.01;
+      else if(min_v < 10.)
+        inc = 0.05;
+      else
+        inc = 0.1;
+      //norm_p = norm(p,n,2.);
+      cout << "new p: (error = " << min_v << ")" << endl;
+      for(int i=0; i<n; i++)
+      {
+        cout << p[i] << ' ';
+        //p[i] /= norm_p;
+      }
+      cout << endl;
+    }
+  }
+  return true;
+}
+
 bool kiteTest()
 {
   Graph g(1);
@@ -298,6 +381,35 @@ bool kiteTest()
   return true;
 }
 
+bool randomDiamTest()
+{
+  Graph g(1);
+  double error;
+  for(int n=50; n<1000; n+=50)
+    for(int diam=10; diam<n/3; diam+=10)
+    {
+      for(double p=0.01; p<0.2; p+=0.01)
+      {
+        double av = 0.;
+        for(int trial=0; trial<20; trial++)
+        {
+          randomGraphDiam(&g, diam, p, n);
+          error = 0;
+          if(!test_graph(&g, &error))
+          {
+            cout << "Counterexample!" << endl << endl;
+            cout << g.mAdjMatrix << endl << endl;
+            return false;
+          }
+          av += error;
+        }
+        av /= 20.;
+        cout << n << ' ' << diam << ' ' << p << ' ' << av << endl;
+      }
+    }
+  return true;
+}
+
 int main()
 {
   srand48(10);
@@ -308,6 +420,13 @@ int main()
     return 0;
 
   cout << "All passed." << endl << endl;
+
+  cout << "Testing against high diameter..." << endl << endl;
+
+  if(!randomDiamTest())
+    return 0;
+  
+  cout << "All passed." << endl << endl;
   
   cout << "Testing against GNP..." << endl << endl;
   
@@ -316,6 +435,13 @@ int main()
 
   cout << "All passed." << endl << endl;
 
+  cout << "Testing against dual GW..." << endl << endl;
+
+  if(!randomGWJoinTest())
+    return 0;
+
+  cout << "All passed." << endl << endl;
+  
   cout << "Testing against GW..." << endl << endl;
 
   if(!randomGWTest())
