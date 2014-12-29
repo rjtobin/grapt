@@ -16,7 +16,69 @@ using namespace arma;
 
 #define EPS 0.0000001
 
+double prec[500][500][500];
+
+double extremal(int p, int q, int r)
+{
+  bool oob = false;
+  if(p > 499 || q > 499 || r > 499)
+    oob = true;
+  if(!oob && prec[p][q][r] > -1.)
+    return prec[p][q][r];
+
+  mat A;
+  int n = p+q+r;
+  A.set_size(n,n);
+  A.fill(1);
+  for(int i=0; i<n; i++)
+    A(i,i) = 0;
+  for(int i=0; i<p; i++)
+  {
+    for(int j=n-1; j>=n-q; j--)
+    {
+      A(i,j) = A(j,i) = 0;
+    }
+  }
+
+  vec eigval;
+  mat eigvec;
+  eig_sym(eigval,eigvec,A);
+
+  double ans = eigval(n-1) + eigval(n-2);
+  if(!oob)
+    prec[p][q][r] = ans;  
+  //prec[p][q][r] = eigval(n-1) + eigval(n-2);
+  return ans;
+}
+
 bool test_graph(Graph* g, double* error)
+{
+  int n = g->getNumVertices();
+
+  double t1 = g->spectrum(n-1) + g->spectrum(n-2);
+
+  double t2 = g->spectrum(0) + g->spectrum(n-2);
+
+  double t = (t1 > t2) ? t1 : t2;
+
+  //int p = 2. * n/7.;
+  //int q = p;
+  int r = 3. * n / 7.;
+  int p = (n - r) * 0.5;
+  int q = n - p - r;
+  double bound = extremal(p,q,r);
+
+  *error = bound + 0.000001 - t;
+
+  //cout << bound << ' ' << t << endl;
+  
+  if(*error < 0)
+    return false;
+  return true;
+}
+
+
+bool o_test_graph(Graph* g, double* error)
 {
   int n = g->getNumVertices();
   
@@ -377,6 +439,7 @@ bool kiteTest()
         cout << g.mAdjMatrix << endl << endl;
         return false;
       }
+      //cout << r << ' ' << s << ' ' << error << endl;
     }
   return true;
 }
@@ -412,6 +475,10 @@ bool randomDiamTest()
 
 int main()
 {
+  for(int p=0; p<100; p++)
+    for(int q=0; q<100; q++)
+      for(int r=0; r<100; r++)
+        prec[p][q][r] = -2.;
   srand48(10);
 
   cout << "Testing against kite graphs..." << endl << endl;
@@ -423,8 +490,8 @@ int main()
 
   cout << "Testing against high diameter..." << endl << endl;
 
-  if(!randomDiamTest())
-    return 0;
+  // if(!randomDiamTest())
+  //  return 0;
   
   cout << "All passed." << endl << endl;
   
@@ -437,8 +504,8 @@ int main()
 
   cout << "Testing against dual GW..." << endl << endl;
 
-  if(!randomGWJoinTest())
-    return 0;
+  //if(!randomGWJoinTest())
+  //  return 0;
 
   cout << "All passed." << endl << endl;
   
