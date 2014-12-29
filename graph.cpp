@@ -22,10 +22,14 @@ Graph::Graph(int n)
   mE = 0;
   mAdjMatrix.set_size(n,n);
   mAdjMatrix.fill(0);
+  mLaplacian.set_size(n,n);
+  mLaplacian.fill(0);
   mSpectrum = 0;
   mSpectOutdated = true;
   mDiamOutdated = true;
-  mDeg = 0;
+  mNLOutdated = true;
+
+  mDeg = new int[n];
 }
 
 Graph::Graph(mat* adjacency)
@@ -35,6 +39,7 @@ Graph::Graph(mat* adjacency)
   mSpectrum = 0;
   mSpectOutdated = true;
   mDiamOutdated = true;
+  mNLOutdated = true;
 
   mDeg = new int[mN];
   
@@ -51,6 +56,13 @@ Graph::Graph(mat* adjacency)
       }
     }
   }
+
+  mLaplacian.fill(0);
+  for(int i=0; i<mN; i++)
+  {
+    mLaplacian(i,i) = mDeg[i];
+  }
+  mLaplacian = mLaplacian - mAdjMatrix;
 }
 
 Graph::~Graph()
@@ -67,8 +79,14 @@ void Graph::setNumVertices(int n)
   mE = 0;
   mAdjMatrix.resize(n,n);
   mAdjMatrix.fill(0);
+
+  mLaplacian.resize(n,n);
+  mLaplacian.fill(0);
+  
   mSpectOutdated = true;
   mDiamOutdated = true;
+  mNLOutdated = true;
+  
   if(mDeg)
     delete[] mDeg;
   mDeg = new int[n];
@@ -90,11 +108,15 @@ void Graph::addEdge(int i, int j)
   if(mAdjMatrix(i,j) < EPS)
   {
     mAdjMatrix(i,j) = mAdjMatrix(j,i) = 1.;
+    mLaplacian(i,j) = mLaplacian(j,i) = -1.;
+    mLaplacian(i,i) += 1.;
+    mLaplacian(j,j) += 1.;
     mE++;
     mDeg[i]++;
     mDeg[j]++;
     mSpectOutdated = true;
     mDiamOutdated = true;
+    mNLOutdated = true;
   }
 }
 
@@ -168,6 +190,18 @@ int Graph::getDiam()
   return mDiam;
 }
 
+arma::mat& Graph::getNormLaplacian()
+{
+  if(mNLOutdated)
+    mGenerateNL();
+  return mNormLaplacian;
+}
+
+arma::mat& Graph::getLaplacian()
+{
+  return mLaplacian;
+}
+
 void Graph::mGenerateSpectrum()
 {
   vec eigval;
@@ -180,6 +214,23 @@ void Graph::mGenerateSpectrum()
   for(int i=0; i<mN; i++)
     mSpectrum[i] = eigval(i);
   mSpectOutdated = false;
+}
+
+void Graph::mGenerateNL()
+{
+  mNormLaplacian.set_size(mN,mN);
+  mNormLaplacian.fill(0);
+  for(int i=0; i<mN; i++)
+  {
+    for(int j=0; j<mN; j++)
+    {
+      if(i==j)
+        mNormLaplacian(i,j) = 1.;
+      else if(mAdjMatrix(i,j) > 0.5)
+        mNormLaplacian(i,j) = 1. / sqrt(mDeg[i] * mDeg[j]);
+    }
+  }
+  mNLOutdated = false;
 }
 
 void randomGraphGNP(Graph* g, double p, int n)
@@ -331,3 +382,4 @@ bool isConnected(Graph* g)
       return false;
   return true;
 }
+

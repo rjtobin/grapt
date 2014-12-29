@@ -33,9 +33,17 @@ public:
   int getDegree(int i);
 
   int getDiam();
+
+  arma::mat& getNormLaplacian();
+  arma::mat& getLaplacian();
   
 //private:
   arma::mat mAdjMatrix;
+
+private:  
+  arma::mat mNormLaplacian;
+  arma::mat mLaplacian;
+  
   int mN;
   int mE;
   int* mDeg;
@@ -45,8 +53,10 @@ public:
   
   bool mSpectOutdated;
   bool mDiamOutdated;
+  bool mNLOutdated;
   
   void mGenerateSpectrum();
+  void mGenerateNL();
 };
 
 void randomGraphGNP(Graph* g, double p, int n);
