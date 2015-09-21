@@ -26,7 +26,7 @@ int diam_main()
   return 0;
 }
 
-int main()
+int _main()
 {
   Graph g(5);
   int i,j;
@@ -42,3 +42,15 @@ int main()
   
   return 0;
 }
+
+int main()
+{
+  srand48(time(NULL));
+  
+  Graph g(1);
+
+  randomGraphPoly(&g, 29, 2, 2, 3);
+
+  cout << g.getNumEdges() << endl;
+}
+

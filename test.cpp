@@ -5,6 +5,7 @@
    Josh Tobin (tobinrj@tcd.ie), 2014
    ======================================================================== */
 
+#include <algorithm>
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
@@ -51,7 +52,36 @@ double extremal(int p, int q, int r)
   return ans;
 }
 
-bool test_graph(Graph* g, double* error)
+bool w_test_graph(Graph* g, double* error)
+{
+  int n = g->getNumVertices();
+
+  double t = g->spectrum(n-3);
+  //double t2 = g->spectrum(2);
+  //double t = (t1 > t2) ? t1 : t2;
+
+  vector<int> deg(n);
+  for(int i=0; i<n; i++)
+    deg[i] = g->getDegree(i);
+
+  sort(deg.begin(), deg.end());
+
+  *error = deg[n-3] - t;
+  if(*error < 0)
+  {
+    if(!isConnected(g))
+    {
+      *error = 1000;
+      return true;
+    }
+    cout << deg[n-3] << ' ' << t << endl;
+    return false;
+  }
+  return true;
+    
+}
+
+bool _test_graph(Graph* g, double* error)
 {
   int n = g->getNumVertices();
 
@@ -78,30 +108,39 @@ bool test_graph(Graph* g, double* error)
 }
 
 
-bool o_test_graph(Graph* g, double* error)
+bool test_graph(Graph* g, double* error)
 {
   int n = g->getNumVertices();
-  
+
+  mat A1 = g->mAdjMatrix;
   mat A3 = g->mAdjMatrix;
   mat A5 = g->mAdjMatrix;
+  mat A2 = g->mAdjMatrix;
 
   A3 = (A3*A3)*A3;
 
   A5 = (A3*A5)*A5;
 
-  double w3 = 0., w5 = 0.;
+  A2 = A1 * A1;
+  
+  double w1 = 0., w2 = 0., w3 = 0., w5 = 0.;
 
   for(int i=0; i<n; i++)
     for(int j=0; j<n; j++)
     {
+      w1 += A1(i,j);
+      w2 += A2(i,j);
       w3 += A3(i,j);
       w5 += A5(i,j);
     }
 
+  w1 /= (double) n;
   w3 /= (double) n;
   w5 /= (double) n;
 
-  *error = pow(w5,1./5.) - pow(w3,1./3.);
+  //*error =  2 * w5 * w1 - w3 * w3;
+  *error =  n * w5 - w3 * w2;
+
   if(*error < -EPS)
     return false;
   return true;
@@ -504,8 +543,8 @@ int main()
 
   cout << "Testing against dual GW..." << endl << endl;
 
-  //if(!randomGWJoinTest())
-  //  return 0;
+  if(!randomGWJoinTest())
+    return 0;
 
   cout << "All passed." << endl << endl;
   

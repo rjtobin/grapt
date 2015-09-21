@@ -32,6 +32,43 @@ Graph::Graph(int n)
   mDeg = new int[n];
 }
 
+Graph::Graph(const Graph& copy_from)
+{
+  mN = copy_from.mN;
+  mE = copy_from.mE;
+  mAdjMatrix = copy_from.mAdjMatrix;
+  mLaplacian = copy_from.mLaplacian;
+  mSpectrum = 0;
+  mSpectOutdated = true;
+  mDiamOutdated = true;
+  mNLOutdated = true;
+
+  mDeg = new int[mN];
+  for(int i=0; i<mN; i++)
+    mDeg[i] = copy_from.mDeg[i];
+}
+
+Graph& Graph::operator=(const Graph& rhs)
+{
+  mN = rhs.mN;
+  mE = rhs.mE;
+  mAdjMatrix = rhs.mAdjMatrix;
+  mLaplacian = rhs.mLaplacian;
+  if(mSpectrum)
+    delete[] mSpectrum;
+  mSpectrum = 0;
+  mSpectOutdated = true;
+  mDiamOutdated = true;
+  mNLOutdated = true;
+
+  if(mDeg)
+    delete[] mDeg;
+  mDeg = new int[mN];
+  for(int i=0; i<mN; i++)
+    mDeg[i] = rhs.mDeg[i];
+}
+
+
 Graph::Graph(mat* adjacency)
 {
   mAdjMatrix = *adjacency;
@@ -120,6 +157,26 @@ void Graph::addEdge(int i, int j)
   }
 }
 
+void Graph::deleteEdge(int i, int j)
+{
+  if(i < 0 || j < 0 || i >= mN || j >= mN)
+    return;
+  if(mAdjMatrix(i,j) > 0.5)
+  {
+    mAdjMatrix(i,j) = mAdjMatrix(j,i) = 0.;
+    mLaplacian(i,j) = mLaplacian(j,i) = 0.;
+    mLaplacian(i,i) -= 1.;
+    mLaplacian(j,j) -= 1.;
+    mE--;
+    mDeg[i]--;
+    mDeg[j]--;
+    mSpectOutdated = true;
+    mDiamOutdated = true;
+    mNLOutdated = true;
+  }
+
+}
+
 double Graph::spectrum(int i)
 {
   if(i<0 || i>=mN)
@@ -161,7 +218,7 @@ int Graph::getDiam()
   mat D, Dn;
   //D.set_size(mN,mN);
 
-  std::cerr << mN << ' ' << endl;
+  //std::cerr << mN << ' ' << endl;
  
   D = mAdjMatrix;
   for(int i=0; i<mN; i++)
@@ -294,6 +351,75 @@ void randomGraphDiam(Graph* g, int diam, double p, int n)
     
     current_vertex += vert[i];
   }  
+}
+
+void randomGraphPoly(Graph* g, int q, int t, int r, int d)
+{
+  int n = 2;
+  for(int i=0; i<t; i++)
+    n*=q;
+  g->setNumVertices(n);
+
+  poly* p[r];
+  for(int i=0; i<r; i++)
+  {
+    p[i] = new poly(2*t);
+    *(p[i]) = rand_poly(d,2*t,q);
+    p[i]->print();
+  }
+
+  vector<int> v(2*t);
+  for(int i=0; i<2*t; i++)
+    v[i] = 0;
+
+  while(1)
+  {
+    bool done = true;
+
+    for(int i=0; i<2*t; i++)
+    {
+      if(v[i] < q-1)
+      {
+        v[i]++;
+        done = false;
+        break;
+      }
+      else
+        v[i] = 0;
+    }
+
+    bool connect = true;
+    for(int j=0; j<r; j++)
+    {
+      if( (p[j])->eval(v,q) != 0)
+      {
+        connect = false;
+        break;
+      }
+    }
+
+    if(connect)
+    {
+      int index1 = 0, index2 = 0;
+      int qpow = 1;
+      for(int i=0; i<t; i++)
+      {
+        index1 += v[i] * qpow;
+        index2 += v[t+i] * qpow;
+        qpow *= q;
+      }
+      g->addEdge(index1,index2);
+      //for(int i=0; i<2*t; i++)
+      //  cout << v[i] << ' ';
+      //cout << endl;
+    }
+    
+    if(done)
+      break;
+  }
+  
+  for(int i=0; i<r; i++)
+    delete (p[i]);
 }
 
 void joinGraphs(Graph* r, Graph* g1, Graph* g2)

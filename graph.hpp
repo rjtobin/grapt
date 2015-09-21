@@ -12,17 +12,23 @@
 #include <cstdlib>
 #include <deque>
 
+#include "poly.hpp"
+
 class Graph
 {
 public:
   Graph(int n);
   Graph(arma::mat* adjacency);
+  Graph(const Graph& copy_from);
   ~Graph();
+
+  Graph& operator=(const Graph& rhs);
   
   void setNumVertices(int n);
    
   bool isConnected(int i, int j);
   void addEdge(int i, int j);
+  void deleteEdge(int i, int j);
 
   double spectrum(int i);
   double eigenvector(int i, int j);
@@ -62,6 +68,7 @@ private:
 void randomGraphGNP(Graph* g, double p, int n);
 void randomGraphGW(Graph* g, double* p, int n);
 void randomGraphDiam(Graph* g, int diam, double p, int n);
+void randomGraphPoly(Graph* g, int q, int t, int r, int d);
 
 void joinGraphs(Graph* r, Graph* g1, Graph* g2);
 
