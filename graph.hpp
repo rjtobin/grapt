@@ -23,6 +23,9 @@ public:
   ~Graph();
 
   Graph& operator=(const Graph& rhs);
+  bool operator<(const Graph& rhs) const;
+  bool operator>(const Graph& rhs) const;
+  bool operator==(const Graph& rhs) const;
   
   void setNumVertices(int n);
    

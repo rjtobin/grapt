@@ -68,6 +68,47 @@ Graph& Graph::operator=(const Graph& rhs)
     mDeg[i] = rhs.mDeg[i];
 }
 
+bool Graph::operator<(const Graph& rhs) const
+{
+  if(mN < rhs.mN)
+    return true;
+  if(mN > rhs.mN)
+    return false;
+  for(int i=0; i<mN; i++)
+  {
+    for(int j=i+1; j<mN; j++)
+    {
+      if(mAdjMatrix(i,j) < 0.5 && rhs.mAdjMatrix(i,j) > 0.5)
+        return true;
+      if(mAdjMatrix(i,j) > 0.5 && rhs.mAdjMatrix(i,j) < 0.5)
+        return false;
+    }
+  }
+  return false;
+}
+
+bool Graph::operator>(const Graph& rhs) const
+{
+  return !(*this < rhs);
+}
+
+bool Graph::operator==(const Graph& rhs) const
+{
+  if(mN != rhs.mN)
+    return false;
+  for(int i=0; i<mN; i++)
+  {
+    for(int j=i+1; j<mN; j++)
+    {
+      if(mAdjMatrix(i,j) < 0.5 && rhs.mAdjMatrix(i,j) > 0.5)
+        return false;
+      if(mAdjMatrix(i,j) > 0.5 && rhs.mAdjMatrix(i,j) < 0.5)
+        return false;
+    }
+  }
+  return true;
+}
+
 
 Graph::Graph(mat* adjacency)
 {
