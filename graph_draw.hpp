@@ -16,4 +16,6 @@
 
 void draw_graph(CDrawing& drawing, Graph& g, int x_size, int y_size);
 
+void force_draw(CDrawing& drawing, Graph& g, int x_size, int y_size);
+
 #endif
