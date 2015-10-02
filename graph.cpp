@@ -16,6 +16,95 @@ static inline int min(int x, int y)
   return (x<y) ? x : y;
 }
 
+static unsigned int writeN(unsigned long long r, char *data)
+{
+  if(r <= 62)
+  {
+    data[0] = r + 63;
+    return 1;
+  }
+  if(r <= 258047)
+  {
+    data[0] = 126;
+    for(int i=1; i<=3; i++)
+    {
+      data[i] = (r % (1 << 6)) + 63;
+      r >> 6;
+    }
+    return 4;
+  }
+  if(r <= 258047)
+  {
+    data[0] = 126;
+    for(int i=1; i<=3; i++)
+    {
+      data[i] = (r % (1 << 6)) + 63;
+      r >> 6;
+    }
+  }
+
+  data[0] = data[1] = 126;
+  for(int i=2; i<8; i++)
+  {
+      data[i] = (r % (1 << 6)) + 63;
+      r >> 6;
+  }
+  return 8;
+}
+
+static unsigned int readN(unsigned long long& r, char* d)
+{
+  if(d[0] < 126)
+  {
+    r = (d[0] - 63);
+    return 1;
+  }
+  if(d[1] < 126)
+  {
+    r = (d[3] - 63) + ((d[2] - 63) << 6) + ((d[1] - 63) << 12);
+    return 4;
+  }
+
+  r =  (d[4] - 63) + ((d[3] - 63) << 6) + ((d[2] - 63) << 12);
+  r = r << 18;
+  r += (d[7] - 63) + ((d[6] - 63) << 6) + ((d[5] - 63) << 12);
+  return 8;
+}
+
+static void writeR(bool* b, char* d, unsigned long long n)
+{
+  for(int i=0; i<n; i++)
+  {
+    d[i] = 0;
+    for(int j=0; j<6; j++)
+    {
+      if(b[6*(i+1) - j - 1])
+        d[i] += (1 << j);
+    }
+    d[i] += 63;
+  }
+}
+
+/* Read in the data encoded as *d = R(x), according to
+   the graph6 data format specified by McKay.
+
+   b is the preallocated memory to store the resulting data,
+   d is the incoming data and n is the length of the incoming
+   data in bytes.
+*/
+
+static void readR(bool* b, char* d, unsigned long long n)
+{
+  for(int i=0; i<n; i++)
+  {
+    char c = d[i];
+    c -= 63;
+    for(int j=0; j<6; j++)
+      b[6*(i+1) - j - 1] = ((c >> j) % 2);
+  }
+}
+
+
 Graph::Graph(int n)
 {
   mN = n;
@@ -143,12 +232,76 @@ Graph::Graph(mat* adjacency)
   mLaplacian = mLaplacian - mAdjMatrix;
 }
 
+Graph::Graph(char* g6_graph)
+{
+  to_g6(g6_graph);
+}
+
 Graph::~Graph()
 {
   if(mSpectrum)
     delete[] mSpectrum;
   if(mDeg)
     delete[] mDeg;
+}
+
+void Graph::from_g6(char* d)
+{
+  unsigned long long int n;
+  unsigned int n_read = readN(n, d);
+ 
+  setNumVertices(n);
+    
+  unsigned long long nb = n*(n-1) / 2;
+  if(nb % 6)
+    nb = nb/6 + 1;
+  else
+    nb = nb/6;
+
+  bool* bytes = new bool[nb * 6];
+  
+  readR(bytes, d+n_read, nb);
+
+  unsigned int index = 0;
+  for(int i=1; i<n; i++)
+  {
+    for(int j=0; j<i; j++)
+    {
+      if(bytes[index++])
+      {
+        addEdge(j,i);
+      }
+    }
+  }
+
+  delete[] bytes;
+}
+
+void Graph::to_g6(char* d)
+{
+  unsigned int n = mN;
+  unsigned long long int nb = n*(n-1) / 2;
+  if(nb % 6)
+    nb = nb/6 + 1;
+  else
+    nb = nb/6;
+
+  bool *bytes = new bool[nb * 6];
+  
+  unsigned int index = 0;
+  for(int i=1; i<n; i++)
+  {
+    for(int j=0; j<i; j++)
+    {
+      bytes[index++] = isConnected(i,j);
+    }
+  }
+
+  
+  unsigned int n_wrote = writeN(n, d);
+  writeR(bytes, d+n_wrote, nb);
+  
+  delete[] bytes;
 }
 
 void Graph::setNumVertices(int n)
@@ -257,9 +410,6 @@ int Graph::getDiam()
     return mDiam;
 
   mat D, Dn;
-  //D.set_size(mN,mN);
-
-  //std::cerr << mN << ' ' << endl;
  
   D = mAdjMatrix;
   for(int i=0; i<mN; i++)
@@ -450,9 +600,6 @@ void randomGraphPoly(Graph* g, int q, int t, int r, int d)
         qpow *= q;
       }
       g->addEdge(index1,index2);
-      //for(int i=0; i<2*t; i++)
-      //  cout << v[i] << ' ';
-      //cout << endl;
     }
     
     if(done)

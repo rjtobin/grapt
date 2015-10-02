@@ -20,8 +20,12 @@ public:
   Graph(int n);
   Graph(arma::mat* adjacency);
   Graph(const Graph& copy_from);
+  Graph(char* g6_graph);  
   ~Graph();
 
+  void from_g6(char* d);
+  void to_g6(char* d);
+  
   Graph& operator=(const Graph& rhs);
   bool operator<(const Graph& rhs) const;
   bool operator>(const Graph& rhs) const;
