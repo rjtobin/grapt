@@ -30,15 +30,24 @@ void force_draw(CDrawing& drawing, Graph& g, int x_size, int y_size)
   int n = g.getNumVertices();
 
   double c1 = 2., c2 = 1., c3 = 1., c4 = .1;
-  int n_iter = 100;
+  int n_iter = 400;
+
+  /*if(n > 30)
+  {
+    c3 /= 2.;
+    c4 / 1.5;
+    }*/
   
   CPoint* pts[n];
   CPoint* forces[n];
   for(int i=0; i<n; i++)
   {
     forces[i] = new CPoint(0,0);
-    pts[i] = new CPoint(drand48() * (double) (x_size / 1.), drand48() * (double) (y_size / 1.));
+    pts[i] = new CPoint(drand48() * (double) (x_size / 1.2), drand48() * (double) (y_size / 1.2));
   }
+
+  if(n > 40)
+    n_iter = 0;
 
   for(int i=0; i<n_iter; i++)
   {
@@ -63,6 +72,13 @@ void force_draw(CDrawing& drawing, Graph& g, int x_size, int y_size)
 
       pts[j]->x += fx;
       pts[j]->y += fy;
+
+//      if(pts[j]->x < -5. || pts[j]->x > x_size || pts[j]->y < 5.
+//         || pts[j]->y > y_size)
+//      {
+//        c3 = c3*0.99;
+//        n_iter = 1;
+//      }
     }
   }
   
@@ -74,8 +90,8 @@ void force_draw(CDrawing& drawing, Graph& g, int x_size, int y_size)
   for(int i=0; i<n; i++)
     for(int j=i+1; j<n; j++)
       if(g.isConnected(i,j))
-        drawing.addShape(new CLine(*pts[i],*pts[j]));
-
+        drawing.addShape(new CLine(*pts[i],*pts[j]));  
+  
   for(int i=0; i<n; i++)
     delete forces[i];
 }
