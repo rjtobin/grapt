@@ -389,6 +389,27 @@ double Graph::eigenvector(int i, int j)
   return mEigenvectors(i,j);
 }
 
+double Graph::mainAngle(int i)
+{
+  if(i<0 || i>=mN)
+    return 0;
+  if(mSpectOutdated)
+    mGenerateSpectrum();
+
+  double ret = 0., norm = 0.;
+  for(int j=0; j<mN; j++)
+  {
+    ret += mEigenvectors(j,i);
+    norm += pow(mEigenvectors(j,i),2.);
+  }
+  norm = pow(norm,1./2.);
+
+  ret /= norm;
+  ret /= pow(mN, 1./2.);
+
+  return ret;
+}
+
 int Graph::getNumVertices()
 {
   return mN;

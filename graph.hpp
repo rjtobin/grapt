@@ -39,6 +39,7 @@ public:
 
   double spectrum(int i);
   double eigenvector(int i, int j);
+  double mainAngle(int i);
 
   int getNumVertices();
   int getNumEdges();
