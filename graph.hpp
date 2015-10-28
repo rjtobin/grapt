@@ -1,9 +1,11 @@
 #if !defined(GRAPH_H)
 /* ========================================================================
-   FILENAME $
-   DESCRIPTION $
-   PROJECT $
-   Josh Tobin (tobinrj@tcd.ie), 2014
+   grapt:
+     Generates a LaTeX report of a user-defined graph property.
+
+   graph.hpp:  Defines the Graph class 
+   
+   Josh Tobin (tobinrj@tcd.ie), 2015
    ======================================================================== */
 
 #define GRAPH_H

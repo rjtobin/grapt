@@ -1,9 +1,11 @@
 #if !defined(GRAPH_DRAW_H)
 /* ========================================================================
-   FILENAME $
-   DESCRIPTION $
-   PROJECT $
-   Josh Tobin (tobinrj@tcd.ie), 2014
+   grapt:
+     Generates a LaTeX report of a user-defined graph property.
+
+   graph_draw.hpp:  Force-directed graph drawing functions. 
+   
+   Josh Tobin (tobinrj@tcd.ie), 2015
    ======================================================================== */
 
 #define GRAPH_DRAW_H
