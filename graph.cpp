@@ -54,7 +54,7 @@ static unsigned int writeN(unsigned long long r, char *data)
   return 8;
 }
 
-static unsigned int readN(unsigned long long& r, char* d)
+static unsigned int readN(unsigned long long& r, const char* d)
 {
   if(d[0] < 126)
   {
@@ -95,7 +95,7 @@ static void writeR(bool* b, char* d, unsigned long long n)
    data in bytes.
 */
 
-static void readR(bool* b, char* d, unsigned long long n)
+static void readR(bool* b, const char* d, unsigned long long n)
 {
   for(int i=0; i<n; i++)
   {
@@ -247,7 +247,7 @@ Graph::~Graph()
     delete[] mDeg;
 }
 
-void Graph::from_g6(char* d)
+void Graph::from_g6(const char* d)
 {
   unsigned long long int n;
   unsigned int n_read = readN(n, d);

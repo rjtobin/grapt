@@ -25,7 +25,7 @@ public:
   Graph(char* g6_graph);  
   ~Graph();
 
-  void from_g6(char* d);
+  void from_g6(const char* d);
   void to_g6(char* d);
   
   Graph& operator=(const Graph& rhs);
