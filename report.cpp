@@ -188,7 +188,7 @@ void extremal_section(Clatex& report, string title, string file_prefix,
   {
     cout << "starting " << i << endl;
     max_graph(&mg, i, file_prefix);
-    force_draw(*graphDraw[i-start], mg, 10., 6.);
+    force_draw(*graphDraw[i-start], mg, 3., 3.);
     cout << "max: " << TestProperty(&mg) << endl;
   }  
 }
@@ -200,7 +200,7 @@ int main()
   INITIAL SETUP
   -------------------------------------------------*/
   
-  const int num_trials = 500;
+  const int num_trials = 50;
   Clatex report;
   report.setTitle("Test Report Document", "grapt");
 
@@ -242,9 +242,9 @@ int main()
   SECTION 2:  EXTREMAL GRAPHS
   -------------------------------------------------*/
   
-  extremal_section(report, "Extremal Connected Graphs", "connected/con", 4, 8);    
-  extremal_section(report, "Extremal Trees", "trees/tree", 4, 18);  
-  extremal_section(report, "Regular Graphs", "reg/reg", 2, 12);   
+  extremal_section(report, "Extremal Connected Graphs", "connected/con", 4, 7);    
+  extremal_section(report, "Extremal Trees", "trees/tree", 4, 15);  
+  extremal_section(report, "Regular Graphs", "reg/reg", 2, 10);   
 
   
 /*-------------------------------------------------

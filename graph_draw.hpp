@@ -16,8 +16,8 @@
 #include "../clatex/clatex.hpp"
 #include "graph.hpp"
 
-void draw_graph(CDrawing& drawing, Graph& g, int x_size, int y_size);
+void draw_graph(CDrawing& drawing, Graph& g, double x_size, double y_size);
 
-void force_draw(CDrawing& drawing, Graph& g, int x_size, int y_size);
+void force_draw(CDrawing& drawing, Graph& g, double x_size, double y_size);
 
 #endif

@@ -9,7 +9,9 @@
 
 #include "graph_draw.hpp"
 
-void draw_graph(CDrawing& drawing, Graph& g, int x_size, int y_size)
+#define EPS 1e-9
+
+void draw_graph(CDrawing& drawing, Graph& g, double x_size, double y_size)
 {
   int n = g.getNumVertices();
 
@@ -27,18 +29,12 @@ void draw_graph(CDrawing& drawing, Graph& g, int x_size, int y_size)
 }
 
 // Force algorithm of Eades (1984)
-void force_draw(CDrawing& drawing, Graph& g, int x_size, int y_size)
+void force_draw(CDrawing& drawing, Graph& g, double x_size, double y_size)
 {
   int n = g.getNumVertices();
 
   double c1 = 2., c2 = 1., c3 = 1., c4 = .1;
   int n_iter = 400;
-
-  /*if(n > 30)
-  {
-    c3 /= 2.;
-    c4 / 1.5;
-    }*/
   
   CPoint* pts[n];
   CPoint* forces[n];
@@ -75,13 +71,45 @@ void force_draw(CDrawing& drawing, Graph& g, int x_size, int y_size)
       pts[j]->x += fx;
       pts[j]->y += fy;
 
-//      if(pts[j]->x < -5. || pts[j]->x > x_size || pts[j]->y < 5.
-//         || pts[j]->y > y_size)
-//      {
-//        c3 = c3*0.99;
-//        n_iter = 1;
-//      }
     }
+  }
+
+  double max_x = pts[0]->x, min_x = pts[0]->x;
+  double max_y = pts[0]->x, min_y = pts[0]->x;
+  
+  for(int i=1; i<n; i++)
+  {
+    if(pts[i]->x > max_x)
+      max_x = pts[i]->x;
+    if(pts[i]->y > max_y)
+      max_y = pts[i]->y;
+    if(pts[i]->x < min_x)
+      min_x = pts[i]->x;
+    if(pts[i]->y < min_y)
+      min_y = pts[i]->y;    
+  }
+
+  double width = max_x - min_x;
+  double height = max_y - min_y;
+
+  if(width < EPS)
+    width = 1.;
+  if(height < EPS)
+    height = 1.;
+
+  
+  // If the graph is already within the specified size,
+  // then trust the dimensions resulting from the algorithm
+  if(width < x_size)
+    width = x_size = 1.;
+  if(height < y_size)
+    height = y_size = 1.;
+  
+  
+  for(int i=0; i<n; i++)
+  {
+     pts[i]->x = ((pts[i]->x - min_x) / width) * x_size;
+     pts[i]->y = ((pts[i]->y - min_y) / height) * y_size;    
   }
   
   for(int i=0; i<n; i++)
