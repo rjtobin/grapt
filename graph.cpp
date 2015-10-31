@@ -6,6 +6,9 @@
    
    Josh Tobin (tobinrj@tcd.ie), 2015
    ======================================================================== */
+
+// XXX: test the g6 writing functions thoroughly
+
 #include "graph.hpp"
 
 #define EPS 0.0000001
@@ -31,7 +34,7 @@ static unsigned int writeN(unsigned long long r, char *data)
     for(int i=1; i<=3; i++)
     {
       data[i] = (r % (1 << 6)) + 63;
-      r >> 6;
+      r = r >> 6; 
     }
     return 4;
   }
@@ -41,7 +44,7 @@ static unsigned int writeN(unsigned long long r, char *data)
     for(int i=1; i<=3; i++)
     {
       data[i] = (r % (1 << 6)) + 63;
-      r >> 6;
+      r = r >> 6; 
     }
   }
 
@@ -49,7 +52,7 @@ static unsigned int writeN(unsigned long long r, char *data)
   for(int i=2; i<8; i++)
   {
       data[i] = (r % (1 << 6)) + 63;
-      r >> 6;
+      r = r >> 6; 
   }
   return 8;
 }
@@ -157,6 +160,8 @@ Graph& Graph::operator=(const Graph& rhs)
   mDeg = new int[mN];
   for(int i=0; i<mN; i++)
     mDeg[i] = rhs.mDeg[i];
+
+  return *this;
 }
 
 bool Graph::operator<(const Graph& rhs) const
