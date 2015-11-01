@@ -119,11 +119,12 @@ void GNP_fixp(double* res, int start, int n, int trials, double p)
     res[i] = GNP(start+i, trials, p);
 }
 
-void max_graph(Graph* g, int size, string path)
+void ext_graph(Graph& min_g, Graph& max_g, double& min_val,
+               double& max_val, double& avg_val, int size, string path)
 {
   Graph G(1);
 
-  double max_v = 0;
+  bool first_graph = true;
   
   ifstream in;
   in.open(path + to_string(size) + ".g6");
@@ -132,6 +133,9 @@ void max_graph(Graph* g, int size, string path)
   char buffer[100];
   bool bytes[1000];
   unsigned int n_read;
+  unsigned int num_graphs = 0;
+  avg_val = 0;
+  
   while(!in.eof())
   {
     in.getline(buffer,100);
@@ -159,12 +163,25 @@ void max_graph(Graph* g, int size, string path)
     }
 
     double tmp = TestProperty(&G);
-    if(tmp > max_v)
+    avg_val += tmp;
+    num_graphs++;
+    if(first_graph || tmp < min_val)
     {
-      max_v = tmp;
-      *g = G;
+      min_val = tmp;
+      min_g = G;
+    }
+    if(first_graph || tmp > max_val)
+    {
+      max_val = tmp;
+      max_g = G;
+    }
+    if(first_graph)
+    {
+      first_graph = false;
     }
   }
+
+  avg_val /= num_graphs;
 }
 
 void extremal_section(Clatex& report, string title, string file_prefix,
@@ -172,24 +189,45 @@ void extremal_section(Clatex& report, string title, string file_prefix,
 {
   CSection& extSec = report.newSection(title);
 
-  CText* graphCent[end-start+1];
-  CDrawing* graphDraw[end-start+1];
+  CDrawing* minDraw[end-start+1];  
+  CDrawing* maxDraw[end-start+1];
+  CText* avgText[end-start+1];
+  CText* minText[end-start+1];
+  CText* maxText[end-start+1];
   
   for(int i=start; i<=end; i++)
   {
+    minText[i-start] = new CText();
+    maxText[i-start] = new CText();
+    avgText[i-start] = new CText();
+    
     extSec.addText("$n=" + to_string(i) + "$:\n");
-    graphCent[i-start] = & extSec.matchedCmd("center"); 
-    graphDraw[i-start] = new CDrawing();
-    graphCent[i-start]->addText(graphDraw[i-start]);
+    extSec.addText(avgText[i-start]);
+
+    
+    extSec.addText(minText[i-start]);
+    CText& minCent = extSec.matchedCmd("center"); 
+    minDraw[i-start] = new CDrawing();
+    minCent.addText(minDraw[i-start]);
+
+    extSec.addText(maxText[i-start]);
+    CText& maxCent = extSec.matchedCmd("center"); 
+    maxDraw[i-start] = new CDrawing();
+    maxCent.addText(maxDraw[i-start]);
   }
 
-  Graph mg(1);
+  Graph maxG(1), minG(1);
+  double max_val, min_val, avg_val;
   for(int i=start; i<=end; i++)
   {
     cout << "starting " << i << endl;
-    max_graph(&mg, i, file_prefix);
-    force_draw(*graphDraw[i-start], mg, 3., 3.);
-    cout << "max: " << TestProperty(&mg) << endl;
+    ext_graph(minG, maxG, min_val, max_val, avg_val, i, file_prefix);
+    force_draw(*minDraw[i-start], minG, 3., 3., 2000);
+    force_draw(*maxDraw[i-start], maxG, 3., 3., 2000);
+    avgText[i-start]->addText("\\\\\nAverage value " + to_string(avg_val) + "\\\\\n");
+    minText[i-start]->addText("Min value " + to_string(min_val) + "\n");
+    maxText[i-start]->addText("Max value " + to_string(max_val) + "\n");
+    cout << "min: " << min_val << " max: " << max_val << " avg: " << avg_val << endl;
   }  
 }
     
@@ -200,7 +238,7 @@ int main()
   INITIAL SETUP
   -------------------------------------------------*/
   
-  const int num_trials = 50;
+  const int num_trials = 500;
   Clatex report;
   report.setTitle("Test Report Document", "grapt");
 
