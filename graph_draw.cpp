@@ -29,13 +29,11 @@ void draw_graph(CDrawing& drawing, Graph& g, double x_size, double y_size)
 }
 
 // Force algorithm of Eades (1984)
-void force_draw(CDrawing& drawing, Graph& g, double x_size, double y_size)
+void force_draw(CDrawing& drawing, Graph& g, double x_size, double y_size, int num_iterations)
 {
   int n = g.getNumVertices();
 
-  double c1 = 2., c2 = 1., c3 = 1., c4 = .1;
-  int n_iter = 400;
-  
+  double c1 = 2., c2 = 1., c3 = 1., c4 = .1;  
   CPoint* pts[n];
   CPoint* forces[n];
   for(int i=0; i<n; i++)
@@ -45,9 +43,9 @@ void force_draw(CDrawing& drawing, Graph& g, double x_size, double y_size)
   }
 
   if(n > 40)
-    n_iter = 0;
+    num_iterations = 0;
 
-  for(int i=0; i<n_iter; i++)
+  for(int i=0; i<num_iterations; i++)
   {
     for(int j=0; j<n; j++)
     {
@@ -100,16 +98,21 @@ void force_draw(CDrawing& drawing, Graph& g, double x_size, double y_size)
   
   // If the graph is already within the specified size,
   // then trust the dimensions resulting from the algorithm
-  if(width < x_size)
-    width = x_size = 1.;
-  if(height < y_size)
-    height = y_size = 1.;
+  if(width < x_size && height < y_size)
+    width = x_size = height = y_size = 1.;
+
+  double scale_x = x_size / width;
+  double scale_y = y_size / height;
+  if(scale_x > scale_y)
+    scale_x = scale_y;
+  else
+    scale_y = scale_x;
   
   
   for(int i=0; i<n; i++)
   {
-     pts[i]->x = ((pts[i]->x - min_x) / width) * x_size;
-     pts[i]->y = ((pts[i]->y - min_y) / height) * y_size;    
+    pts[i]->x = (pts[i]->x - min_x) * scale_x;
+    pts[i]->y = (pts[i]->y - min_y) * scale_y;    
   }
   
   for(int i=0; i<n; i++)
