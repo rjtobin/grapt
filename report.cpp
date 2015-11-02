@@ -14,7 +14,6 @@
    
    Josh Tobin (tobinrj@tcd.ie), 2015
    ======================================================================== */
-
 // XXX: use Graph class' g6 code instead of repeating it here
 
 #include <iostream>
@@ -194,26 +193,64 @@ void extremal_section(Clatex& report, string title, string file_prefix,
   CText* avgText[end-start+1];
   CText* minText[end-start+1];
   CText* maxText[end-start+1];
+
+  CText* avgVal[end-start+1];
+  CText* minVal[end-start+1];
+  CText* maxVal[end-start+1];
+
   
   for(int i=start; i<=end; i++)
   {
+    vector<CText*> row[3];
+    row[0].resize(3);
+    row[1].resize(3);
+    row[2].resize(3);
+
+    minDraw[i-start] = new CDrawing();
+    maxDraw[i-start] = new CDrawing();
+
+    
     minText[i-start] = new CText();
     maxText[i-start] = new CText();
     avgText[i-start] = new CText();
-    
-    extSec.addText("$n=" + to_string(i) + "$:\n");
-    extSec.addText(avgText[i-start]);
 
+    minVal[i-start] = new CText();
+    maxVal[i-start] = new CText();
+    avgVal[i-start] = new CText();    
     
-    extSec.addText(minText[i-start]);
-    CText& minCent = extSec.matchedCmd("center"); 
-    minDraw[i-start] = new CDrawing();
-    minCent.addText(minDraw[i-start]);
+    extSec.addText("$n=" + to_string(i) + "$:\\\\ \\\\ \n");
+    //extSec.addText(avgText[i-start]);
 
-    extSec.addText(maxText[i-start]);
-    CText& maxCent = extSec.matchedCmd("center"); 
-    maxDraw[i-start] = new CDrawing();
-    maxCent.addText(maxDraw[i-start]);
+    CTable* table = new CTable();
+    table->setNumCols(3);
+    table->setJust("m{2cm} m{4cm} m{5cm}");
+    extSec.addText("\\fbox{"); // XXX abstract this to Clatex
+    extSec.addText(table);
+    extSec.addText("}\\\\ \\\\");
+
+    row[0][0] = avgText[i-start];
+    row[0][1] = avgVal[i-start];
+    row[0][2] = new CText("");
+    table->addRow(row[0]);
+        
+    row[1][0] = minText[i-start];
+    row[1][1] = minVal[i-start];
+    row[1][2] = minDraw[i-start];
+    table->addRow(row[1]);
+
+    row[2][0] = maxText[i-start];
+    row[2][1] = maxVal[i-start];
+    row[2][2] = maxDraw[i-start];
+    table->addRow(row[2]);
+    
+//    extSec.addText(minText[i-start]);
+//    CText& minCent = extSec.matchedCmd("center"); 
+//    minCent.addText(minDraw[i-start]);
+
+//    extSec.addText(maxText[i-start]);
+//    CText& maxCent = extSec.matchedCmd("center"); 
+//    maxDraw[i-start] = new CDrawing();
+//    maxCent.addText(maxDraw[i-start]);
   }
 
   Graph maxG(1), minG(1);
@@ -224,9 +261,12 @@ void extremal_section(Clatex& report, string title, string file_prefix,
     ext_graph(minG, maxG, min_val, max_val, avg_val, i, file_prefix);
     force_draw(*minDraw[i-start], minG, 3., 3., 2000);
     force_draw(*maxDraw[i-start], maxG, 3., 3., 2000);
-    avgText[i-start]->addText("\\\\\nAverage value " + to_string(avg_val) + "\\\\\n");
-    minText[i-start]->addText("Min value " + to_string(min_val) + "\n");
-    maxText[i-start]->addText("Max value " + to_string(max_val) + "\n");
+    avgText[i-start]->addText("Avg value:");
+    avgVal[i-start]->addText(to_string(avg_val));
+    minText[i-start]->addText("Min value:");
+    minVal[i-start]->addText(to_string(min_val));
+    maxText[i-start]->addText("Max value:");
+    maxVal[i-start]->addText(to_string(max_val));
     cout << "min: " << min_val << " max: " << max_val << " avg: " << avg_val << endl;
   }  
 }
