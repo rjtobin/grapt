@@ -14,11 +14,11 @@
    
    Josh Tobin (tobinrj@tcd.ie), 2015
    ======================================================================== */
-// XXX: use Graph class' g6 code instead of repeating it here
 
-#include <iostream>
 #include <cmath>
+#include <cstring>
 #include <fstream>
+#include <iostream>
 #include "graph.hpp"
 #include "../clatex/clatex.hpp"
 #include "graph_draw.hpp"
@@ -26,77 +26,10 @@
 using namespace std;
 using namespace arma;
 
-unsigned int readN(unsigned long long& r, char* d)
-{
-  if(d[0] < 126)
-  {
-    r = (d[0] - 63);
-    return 1;
-  }
-  if(d[1] < 126)
-  {
-    r = (d[3] - 63) + ((d[2] - 63) << 6) + ((d[1] - 63) << 12);
-    return 4;
-  }
-
-  r =  (d[4] - 63) + ((d[3] - 63) << 6) + ((d[2] - 63) << 12);
-  r = r << 18;
-  r += (d[7] - 63) + ((d[6] - 63) << 6) + ((d[5] - 63) << 12);
-  return 8;
-}
-
-/* Read in the data encoded as *d = R(x), according to
-   the graph6 data format specified by McKay.
-
-   b is the preallocated memory to store the resulting data,
-   d is the incoming data and n is the length of the incoming
-   data in bytes.
-*/
-
-void readR(bool* b, char* d, unsigned long long int n)
-{
-  for(int i=0; i<n; i++)
-  {
-    char c = d[i];
-    c -= 63;
-    for(int j=0; j<6; j++)
-      b[6*(i+1) - j - 1] = ((c >> j) % 2);
-  }
-}
-
 double TestProperty(Graph* g)
 {
   int n = g->getNumVertices();
-  double res = 0.;
-
-  double wk = 0.;
-  double neg_sum = 0.;
-  double abs_tr_k = 0.;
-  double energy = 0.;
-  
-  for(int i=0; i<n; i++)
-  {
-    //if(g->spectrum(i) < 0)
-    //  res -= pow(g->mainAngle(i),2.) * pow( - g->spectrum(i),3.);
-    //else res += 0.5 * pow(g->mainAngle(i),2.) * pow(g->spectrum(i),3.);
-
-    abs_tr_k += pow(fabs(g->spectrum(i)),3.);
-    energy += fabs(g->spectrum(i));
-    
-    if(g->spectrum(i) < 0)
-    {
-      wk -= pow(g->mainAngle(i),2.) * pow( - g->spectrum(i), 3. );
-      neg_sum += pow(g->mainAngle(i),2.) * pow(-g->spectrum(i),3.);
-    }
-    else
-    {
-      wk += pow(g->mainAngle(i),2.) * pow(g->spectrum(i), 3. );
-    }
-  }
-
-  //return 100 - (0.5 * wk - pow(0.5 * energy, 3.));
-  //return 100 - (wk - abs_tr_k);
-  return energy;
+  return g->spectrum(n-1) - g->spectrum(0);
 }
 
 double GNP(int n, int trials, double p)
@@ -126,7 +59,13 @@ void ext_graph(Graph& min_g, Graph& max_g, double& min_val,
   bool first_graph = true;
   
   ifstream in;
-  in.open(path + to_string(size) + ".g6");
+  string file_path = path + to_string(size) + ".g6";
+  in.open(file_path); 
+  if(in.fail())
+  {
+    cerr << "Failed to open " << file_path << endl;
+    return;
+  }
   unsigned long long n;
 
   char buffer[100];
@@ -138,29 +77,11 @@ void ext_graph(Graph& min_g, Graph& max_g, double& min_val,
   while(!in.eof())
   {
     in.getline(buffer,100);
-    if(in.eof())
+    if(strlen(buffer) == 0 && in.eof())
       break;
-    n_read = readN(n, buffer);
+    cout << "Read in " << buffer << endl;
+    G.from_g6(buffer);
  
-    G.setNumVertices(n);
-    
-    unsigned long long nb = n*(n-1) / 2;
-    if(nb % 6)
-      nb = nb/6 + 1;
-    else
-      nb = nb/6;
-    readR(bytes, buffer+n_read, nb);
- 
-    unsigned int index = 0;
-    for(int i=1; i<n; i++)
-    {
-      for(int j=0; j<i; j++)
-      {
-        if(bytes[index++])
-          G.addEdge(j,i);
-      }
-    }
-
     double tmp = TestProperty(&G);
     avg_val += tmp;
     num_graphs++;
@@ -186,7 +107,7 @@ void ext_graph(Graph& min_g, Graph& max_g, double& min_val,
 void extremal_section(Clatex& report, string title, string file_prefix,
                       int start, int end)
 {
-  CSection& extSec = report.newSection(title);
+  CSection& extSec = report.newSection(title, true);
 
   CDrawing* minDraw[end-start+1];  
   CDrawing* maxDraw[end-start+1];
@@ -242,32 +163,26 @@ void extremal_section(Clatex& report, string title, string file_prefix,
     row[2][1] = maxVal[i-start];
     row[2][2] = maxDraw[i-start];
     table->addRow(row[2]);
-    
-//    extSec.addText(minText[i-start]);
-//    CText& minCent = extSec.matchedCmd("center"); 
-//    minCent.addText(minDraw[i-start]);
-
-//    extSec.addText(maxText[i-start]);
-//    CText& maxCent = extSec.matchedCmd("center"); 
-//    maxDraw[i-start] = new CDrawing();
-//    maxCent.addText(maxDraw[i-start]);
   }
 
   Graph maxG(1), minG(1);
   double max_val, min_val, avg_val;
+
+  cout << "Starting data set " << file_prefix << endl;
+  
   for(int i=start; i<=end; i++)
   {
-    cout << "starting " << i << endl;
+    cout << '\t' << i;
     ext_graph(minG, maxG, min_val, max_val, avg_val, i, file_prefix);
-    force_draw(*minDraw[i-start], minG, 3., 3., 2000);
-    force_draw(*maxDraw[i-start], maxG, 3., 3., 2000);
+    force_draw(*minDraw[i-start], minG, 3., 3., 4000);
+    force_draw(*maxDraw[i-start], maxG, 3., 3., 4000);
     avgText[i-start]->addText("Avg value:");
     avgVal[i-start]->addText(to_string(avg_val));
     minText[i-start]->addText("Min value:");
     minVal[i-start]->addText(to_string(min_val));
     maxText[i-start]->addText("Max value:");
     maxVal[i-start]->addText(to_string(max_val));
-    cout << "min: " << min_val << " max: " << max_val << " avg: " << avg_val << endl;
+    cout << ": min=" << min_val << ", max=" << max_val << ", avg=" << avg_val << endl;
   }  
 }
     
@@ -278,15 +193,16 @@ int main()
   INITIAL SETUP
   -------------------------------------------------*/
   
-  const int num_trials = 500;
+  const int num_trials = 2000;
   Clatex report;
   report.setTitle("Test Report Document", "grapt");
-
+  report.generateTOC(true);
+  
 /*-------------------------------------------------
   SECTION 1:  RANDOM GRAPHS
   -------------------------------------------------*/
   
-  CSection& randomSec = report.newSection("Random Graphs");
+  CSection& randomSec = report.newSection("Random Graphs", true);
   randomSec.addText("GNP model with $p=1/2$, $n$ varies:");
   CText& randomCent = randomSec.matchedCmd("center");
   CDrawing* randomDraw = new CDrawing();
@@ -320,9 +236,11 @@ int main()
   SECTION 2:  EXTREMAL GRAPHS
   -------------------------------------------------*/
   
-  extremal_section(report, "Extremal Connected Graphs", "connected/con", 4, 7);    
-  extremal_section(report, "Extremal Trees", "trees/tree", 4, 15);  
-  extremal_section(report, "Regular Graphs", "reg/reg", 2, 10);   
+  extremal_section(report, "Extremal Connected Graphs", "connected/con", 4, 9); // max: 10    
+  extremal_section(report, "Extremal Trees", "trees/tree", 4, 19);              // max: 22  
+  extremal_section(report, "Regular Graphs", "reg/reg", 2, 12);                  // max: 14 
+  extremal_section(report, "$C_4$--free Graphs", "c4free/cf", 4, 12);           // max: 15   
+  extremal_section(report, "Bipartite Graphs", "bipartite/bip", 4, 12);         // max: 14
 
   
 /*-------------------------------------------------
