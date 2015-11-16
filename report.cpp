@@ -19,6 +19,9 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+
+#include <pthread.h>
+
 #include "graph.hpp"
 #include "../clatex/clatex.hpp"
 #include "graph_draw.hpp"
@@ -51,35 +54,46 @@ void GNP_fixp(double* res, int start, int n, int trials, double p)
     res[i] = GNP(start+i, trials, p);
 }
 
-void ext_graph(Graph& min_g, Graph& max_g, double& min_val,
-               double& max_val, double& avg_val, int size, string path)
+struct ext_graph_args {
+  ext_graph_args(Graph& _min_g, Graph& _max_g, double& _min_v,
+                 double& _max_v, double& _avg_v, string& _graphs)
+   : min_g(_min_g), max_g(_max_g), min_val(_min_v), max_val(_max_v), avg_val(_avg_v), graphs(_graphs) {};
+  Graph& min_g;
+  Graph& max_g;
+  double& min_val;
+  double& max_val;
+  double& avg_val;
+  string& graphs;
+};
+
+void* ext_graph_slave(void* _args)
 {
-  Graph G(1);
-
-  bool first_graph = true;
+  ext_graph_args* args = (ext_graph_args*) _args;
+  Graph& min_g = args->min_g;
+  Graph& max_g = args->max_g;
+  double& min_val = args->min_val;
+  double& max_val = args->max_val;
+  double& avg_val = args->avg_val;
   
-  ifstream in;
-  string file_path = path + to_string(size) + ".g6";
-  in.open(file_path); 
-  if(in.fail())
-  {
-    cerr << "Failed to open " << file_path << endl;
-    return;
-  }
-  unsigned long long n;
+  bool first_graph = true;
 
+  
+  istringstream in(args->graphs);
+
+  unsigned long long n;
+  Graph G;
+  
   char buffer[100];
   bool bytes[1000];
   unsigned int n_read;
   unsigned int num_graphs = 0;
   avg_val = 0;
   
-  while(!in.eof())
+  while(in)
   {
     in.getline(buffer,100);
-    if(strlen(buffer) == 0 && in.eof())
+    if(strlen(buffer) == 0 && !in)
       break;
-    cout << "Read in " << buffer << endl;
     G.from_g6(buffer);
  
     double tmp = TestProperty(&G);
@@ -100,8 +114,80 @@ void ext_graph(Graph& min_g, Graph& max_g, double& min_val,
       first_graph = false;
     }
   }
+  if(num_graphs > 0)
+    avg_val /= num_graphs;
+  return 0;
+}
 
-  avg_val /= num_graphs;
+void ext_graph(Graph& min_g, Graph& max_g, double& min_val,
+               double& max_val, double& avg_val, int size, string path)
+{
+  const int n_threads = 3;
+  string s[n_threads];
+
+  string line;
+  
+  ifstream in;
+  string file_path = path + to_string(size) + ".g6";
+  in.open(file_path); 
+  if(in.fail())
+  {
+    cerr << "Failed to open " << file_path << endl;
+    return;
+  }  
+  int index = 0;
+  while(!in.eof())
+  {
+    in >> line;
+    if(line.length() == 0 || !in)
+      break;
+    s[index % n_threads] += line; // CURP
+    s[index % n_threads] += "\n";
+    index++;
+  }
+
+  Graph tmin_g[n_threads];
+  Graph tmax_g[n_threads];  
+  double tmin_v[n_threads];
+  double tmax_v[n_threads];
+  double tavg_v[n_threads]; 
+
+
+  
+  pthread_t thread[n_threads];
+  ext_graph_args* args[n_threads];
+  for(int i=0; i<n_threads; i++)
+  {
+    args[i] = new ext_graph_args(tmin_g[i], tmax_g[i], tmin_v[i], tmax_v[i], tavg_v[i], s[i]);
+    pthread_create(&thread[i], NULL, ext_graph_slave, (void*) args[i]);
+    //ext_graph_slave((void*) args[i]);
+  }
+
+  for(int i=0; i<n_threads; i++)
+  {
+    pthread_join(thread[i], NULL);
+  }
+  min_val = tmin_v[0];
+  max_val = tmax_v[0];
+  avg_val = 0;
+  
+  for(int i=0; i<n_threads; i++)
+  {
+    if(tmin_v[i] < min_val)
+    {
+      min_val = tmin_v[i];
+      min_g = tmin_g[i];
+    }
+    if(tmax_v[i] > max_val)
+    {
+      max_val = tmax_v[i];
+      max_g = tmax_g[i];
+    }
+
+    avg_val += tavg_v[i] / n_threads;
+    
+    delete args[i];
+  }
 }
 
 void extremal_section(Clatex& report, string title, string file_prefix,
@@ -193,7 +279,7 @@ int main()
   INITIAL SETUP
   -------------------------------------------------*/
   
-  const int num_trials = 2000;
+  const int num_trials = 20; // 2000
   Clatex report;
   report.setTitle("Test Report Document", "grapt");
   report.generateTOC(true);
@@ -236,7 +322,7 @@ int main()
   SECTION 2:  EXTREMAL GRAPHS
   -------------------------------------------------*/
   
-  extremal_section(report, "Extremal Connected Graphs", "connected/con", 4, 9); // max: 10    
+  extremal_section(report, "Extremal Connected Graphs", "connected/con", 4, 10); // max: 10    
   extremal_section(report, "Extremal Trees", "trees/tree", 4, 19);              // max: 22  
   extremal_section(report, "Regular Graphs", "reg/reg", 2, 12);                  // max: 14 
   extremal_section(report, "$C_4$--free Graphs", "c4free/cf", 4, 12);           // max: 15   
