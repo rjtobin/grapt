@@ -109,7 +109,6 @@ static void readR(bool* b, const char* d, unsigned long long n)
   }
 }
 
-
 Graph::Graph(int n)
 {
   mN = n;

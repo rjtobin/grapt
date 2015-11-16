@@ -19,7 +19,7 @@
 class Graph
 {
 public:
-  Graph(int n);
+  Graph(int n=1);
   Graph(arma::mat* adjacency);
   Graph(const Graph& copy_from);
   Graph(char* g6_graph);  
