@@ -32,7 +32,7 @@ using namespace arma;
 double TestProperty(Graph* g)
 {
   int n = g->getNumVertices();
-  return g->spectrum(n-1) - g->spectrum(0);
+  return 1. - pow(g->mainAngle(n-1),2.);
 }
 
 double GNP(int n, int trials, double p)
@@ -322,7 +322,7 @@ int main()
   SECTION 2:  EXTREMAL GRAPHS
   -------------------------------------------------*/
   
-  extremal_section(report, "Extremal Connected Graphs", "connected/con", 4, 10); // max: 10    
+  extremal_section(report, "Extremal Connected Graphs", "connected/con", 4, 9); // max: 10    
   extremal_section(report, "Extremal Trees", "trees/tree", 4, 19);              // max: 22  
   extremal_section(report, "Regular Graphs", "reg/reg", 2, 12);                  // max: 14 
   extremal_section(report, "$C_4$--free Graphs", "c4free/cf", 4, 12);           // max: 15   

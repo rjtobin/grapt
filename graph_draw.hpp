@@ -13,11 +13,15 @@
 // XXX get rid of this!
 #include <cstdlib>
 
+#include <emmintrin.h>
+#include <pmmintrin.h>
+
 #include "../clatex/clatex.hpp"
 #include "graph.hpp"
 
 void draw_graph(CDrawing& drawing, Graph& g, double x_size, double y_size);
 
 void force_draw(CDrawing& drawing, Graph& g, double x_size, double y_size, int num_iterations);
+void sse_force_draw(CDrawing& drawing, Graph& g, double x_size, double y_size, int num_iterations);
 
 #endif
