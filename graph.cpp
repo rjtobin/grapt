@@ -88,6 +88,7 @@ static void writeR(bool* b, char* d, unsigned long long n)
     }
     d[i] += 63;
   }
+  d[n+1] = 0;
 }
 
 /* Read in the data encoded as *d = R(x), according to
@@ -121,7 +122,8 @@ Graph::Graph(int n)
   mSpectOutdated = true;
   mDiamOutdated = true;
   mNLOutdated = true;
-
+  mDMOutdated = true;
+  
   mDeg = new int[n];
 }
 
@@ -135,7 +137,8 @@ Graph::Graph(const Graph& copy_from)
   mSpectOutdated = true;
   mDiamOutdated = true;
   mNLOutdated = true;
-
+  mDMOutdated = true;
+   
   mDeg = new int[mN];
   for(int i=0; i<mN; i++)
     mDeg[i] = copy_from.mDeg[i];
@@ -153,7 +156,9 @@ Graph& Graph::operator=(const Graph& rhs)
   mSpectOutdated = true;
   mDiamOutdated = true;
   mNLOutdated = true;
-
+  mDMOutdated = true;
+ 
+  
   if(mDeg)
     delete[] mDeg;
   mDeg = new int[mN];
@@ -213,6 +218,7 @@ Graph::Graph(mat* adjacency)
   mSpectOutdated = true;
   mDiamOutdated = true;
   mNLOutdated = true;
+  mDMOutdated = true;
 
   mDeg = new int[mN];
   
@@ -255,7 +261,8 @@ void Graph::from_g6(const char* d)
 {
   unsigned long long int n;
   unsigned int n_read = readN(n, d);
- 
+
+  
   setNumVertices(n);
     
   unsigned long long nb = n*(n-1) / 2;
@@ -323,6 +330,7 @@ void Graph::setNumVertices(int n)
   mSpectOutdated = true;
   mDiamOutdated = true;
   mNLOutdated = true;
+  mDMOutdated = true;
   
   if(mDeg)
     delete[] mDeg;
@@ -354,6 +362,7 @@ void Graph::addEdge(int i, int j)
     mSpectOutdated = true;
     mDiamOutdated = true;
     mNLOutdated = true;
+    mDMOutdated = true;
   }
 }
 
@@ -373,6 +382,7 @@ void Graph::deleteEdge(int i, int j)
     mSpectOutdated = true;
     mDiamOutdated = true;
     mNLOutdated = true;
+    mDMOutdated = true;
   }
 
 }
@@ -477,6 +487,13 @@ arma::mat& Graph::getLaplacian()
   return mLaplacian;
 }
 
+arma::mat& Graph::getDistance()
+{
+  if(mDMOutdated)
+    mGenerateDM();
+  return mDistance;
+}
+
 void Graph::mGenerateSpectrum()
 {
   vec eigval;
@@ -508,6 +525,33 @@ void Graph::mGenerateNL()
   mNLOutdated = false;
 }
 
+void Graph::mGenerateDM()
+{
+  //mDistance.set_size(mN,mN);
+
+  mDistance = mAdjMatrix;
+ 
+  for(int i=0; i<mN; i++)
+    for(int j=0; j<mN; j++)
+      if(i != j && mDistance(i,j) < 0.5)
+        mDistance(i,j) = mN*mN*mN; // infinity XXX: improve this 
+
+  mat Dn = mDistance;
+  for(int k=0; k<mN; k++)
+  {
+    for(int i=0; i<mN; i++)
+    {
+      for(int j=0; j<mN; j++)
+      {
+        Dn(i,j) = min(mDistance(i,j), mDistance(i,k) + mDistance(k,j));
+      }
+    }
+    mDistance = Dn;
+  }
+  
+  mDMOutdated = false;  
+}
+
 void randomGraphGNP(Graph* g, double p, int n)
 {
   g->setNumVertices(n);
@@ -516,6 +560,17 @@ void randomGraphGNP(Graph* g, double p, int n)
     {
       if(drand48() < p)
         g->addEdge(i,j);
+    }
+}
+
+void randomGraphGNP_Bipartite(Graph* g, double p, int n1, int n2)
+{
+  g->setNumVertices(n1+n2);
+  for(int i=0; i<n1; i++)
+    for(int j=0; j<n2; j++)
+    {
+      if(drand48() < p)
+        g->addEdge(i,n1+j);
     }
 }
 

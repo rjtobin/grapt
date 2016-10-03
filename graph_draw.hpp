@@ -21,7 +21,7 @@
 
 void draw_graph(CDrawing& drawing, Graph& g, double x_size, double y_size);
 
-void force_draw(CDrawing& drawing, Graph& g, double x_size, double y_size, int num_iterations);
+void force_draw(CDrawing& drawing, Graph& g, double x_size, double y_size, int num_iterations, std::string* labels=0);
 void sse_force_draw(CDrawing& drawing, Graph& g, double x_size, double y_size, int num_iterations);
 
 #endif

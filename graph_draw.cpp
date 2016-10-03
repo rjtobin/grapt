@@ -272,7 +272,7 @@ void sse_force_draw(CDrawing& drawing, Graph& g, double x_size, double y_size, i
     
 }
 
-void force_draw(CDrawing& drawing, Graph& g, double x_size, double y_size, int num_iterations)
+void force_draw(CDrawing& drawing, Graph& g, double x_size, double y_size, int num_iterations, std::string* labels)
 {
   int n = g.getNumVertices();
 
@@ -362,13 +362,33 @@ void force_draw(CDrawing& drawing, Graph& g, double x_size, double y_size, int n
   
   for(int i=0; i<n; i++)
   {
-    drawing.addShape(pts[i]);
+    if(!labels)
+      drawing.addShape(pts[i]);
+    else
+    {
+      CLabel* label = new CLabel();
+      label->x = pts[i]->x;
+      label->y = pts[i]->y;
+      label->text = labels[i];
+      label->name = "v" + to_string(i);
+      //delete pts[i];
+      drawing.addShape(label);
+    }
   }
   
   for(int i=0; i<n; i++)
     for(int j=i+1; j<n; j++)
       if(g.isConnected(i,j))
-        drawing.addShape(new CLine(*pts[i],*pts[j]));  
+      {
+        if(!labels)
+          drawing.addShape(new CLine(*pts[i],*pts[j]));
+        if(labels)
+          drawing.addShape(new CLine("v" + to_string(i), "v" + to_string(j)));
+      }
+
+  if(labels)
+    for(int i=0; i<n; i++)
+      delete pts[i];
   
   for(int i=0; i<n; i++)
     delete forces[i];

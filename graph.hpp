@@ -52,6 +52,7 @@ public:
 
   arma::mat& getNormLaplacian();
   arma::mat& getLaplacian();
+  arma::mat& getDistance();
   
 //private:
   arma::mat mAdjMatrix;
@@ -59,6 +60,7 @@ public:
 private:  
   arma::mat mNormLaplacian;
   arma::mat mLaplacian;
+  arma::mat mDistance;
   
   int mN;
   int mE;
@@ -70,12 +72,15 @@ private:
   bool mSpectOutdated;
   bool mDiamOutdated;
   bool mNLOutdated;
+  bool mDMOutdated;
   
   void mGenerateSpectrum();
   void mGenerateNL();
+  void mGenerateDM();
 };
 
 void randomGraphGNP(Graph* g, double p, int n);
+void randomGraphGNP_Bipartite(Graph* g, double p, int n1, int n2);
 void randomGraphGW(Graph* g, double* p, int n);
 void randomGraphDiam(Graph* g, int diam, double p, int n);
 void randomGraphPoly(Graph* g, int q, int t, int r, int d);
